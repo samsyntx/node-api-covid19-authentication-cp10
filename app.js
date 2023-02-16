@@ -64,7 +64,7 @@ app.post("/login", async (request, response) => {
 
   if (selectUserName === undefined) {
     response.status(400);
-    response.send("Invalid User");
+    response.send("Invalid user");
   } else {
     const isPasswordMatched = await bcrypt.compare(
       password,
@@ -78,7 +78,7 @@ app.post("/login", async (request, response) => {
       response.send({ jwtToken });
     } else {
       response.status(400);
-      response.send("Invalid Password");
+      response.send("Invalid password");
     }
   }
 });
@@ -100,7 +100,7 @@ app.get("/states/", authentication, async (request, response) => {
 });
 
 // API 3
-app.get("/states/:stateId/", async (request, response) => {
+app.get("/states/:stateId/", authentication, async (request, response) => {
   const { stateId } = request.params;
   const queryToGetStateAsId = `
   SELECT *
@@ -111,7 +111,7 @@ app.get("/states/:stateId/", async (request, response) => {
 });
 
 // API 4
-app.post("/districts/", async (request, response) => {
+app.post("/districts/", authentication, async (request, response) => {
   const { districtName, stateId, cases, cured, active, deaths } = request.body;
   const {} = request.params;
   const queryToUpdateDistricts = `
@@ -141,31 +141,49 @@ const formattingDistrict = (dbObject) => {
   };
 };
 
-app.get("/districts/:districtId/", async (request, response) => {
-  const { districtId } = request.params;
-  const queryToGetDistrictAsId = `
+app.get(
+  "/districts/:districtId/",
+  authentication,
+  async (request, response) => {
+    const { districtId } = request.params;
+    const queryToGetDistrictAsId = `
     SELECT *
     FROM district
     WHERE district_id = '${districtId}';`;
-  const getDistrictsPerId = await database.get(queryToGetDistrictAsId);
-  response.send(formattingDistrict(getDistrictsPerId));
-});
+    const getDistrictsPerId = await database.get(queryToGetDistrictAsId);
+    response.send(formattingDistrict(getDistrictsPerId));
+  }
+);
 
 // API 6
-app.delete("/districts/:districtId/", async (request, response) => {
-  const { districtId } = request.params;
-  const queryToDeleteDistrict = `
+app.delete(
+  "/districts/:districtId/",
+  authentication,
+  async (request, response) => {
+    const { districtId } = request.params;
+    const queryToDeleteDistrict = `
     DELETE FROM district
     WHERE district_id = '${districtId}';`;
-  await database.run(queryToDeleteDistrict);
-  response.send("District Removed");
-});
+    await database.run(queryToDeleteDistrict);
+    response.send("District Removed");
+  }
+);
 
 // API 7
-app.put("/districts/:districtId/", async (request, response) => {
-  const { districtId } = request.params;
-  const { districtName, stateId, cases, cured, active, deaths } = request.body;
-  const queryToUpdateDistrict = `
+app.put(
+  "/districts/:districtId/",
+  authentication,
+  async (request, response) => {
+    const { districtId } = request.params;
+    const {
+      districtName,
+      stateId,
+      cases,
+      cured,
+      active,
+      deaths,
+    } = request.body;
+    const queryToUpdateDistrict = `
   UPDATE district
   SET 
     district_name = '${districtName}',
@@ -176,27 +194,32 @@ app.put("/districts/:districtId/", async (request, response) => {
     deaths = '${deaths}'
   WHERE 
     district_id = '${districtId}';`;
-  await database.run(queryToUpdateDistrict);
-  response.send("District Details Updated");
-});
+    await database.run(queryToUpdateDistrict);
+    response.send("District Details Updated");
+  }
+);
 
 // API 8
-app.get("/states/:stateId/stats/", async (request, response) => {
-  const { stateId } = request.params;
-  const queryToGetTotal = `
+app.get(
+  "/states/:stateId/stats/",
+  authentication,
+  async (request, response) => {
+    const { stateId } = request.params;
+    const queryToGetTotal = `
  SELECT sum(cases) AS cases,
     SUM(cured) AS cured,
     SUM(active) AS active,
     SUM(deaths) AS deaths
  FROM district
  WHERE state_id = '${stateId}';`;
-  const gettingSum = await database.get(queryToGetTotal);
-  response.send({
-    cured: gettingSum.cured,
-    active: gettingSum.active,
-    deaths: gettingSum.active,
-    deaths: gettingSum.deaths,
-  });
-});
+    const gettingSum = await database.get(queryToGetTotal);
+    response.send({
+      cured: gettingSum.cured,
+      active: gettingSum.active,
+      deaths: gettingSum.active,
+      deaths: gettingSum.deaths,
+    });
+  }
+);
 
 module.exports = app;
