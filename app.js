@@ -189,8 +189,14 @@ app.get("/states/:stateId/stats/", async (request, response) => {
     SUM(active) AS active,
     SUM(deaths) AS deaths
  FROM district
- WHERE state_id = '${stateId}
- GROUP BY state_id';`;
+ WHERE state_id = '${stateId}';`;
   const gettingSum = await database.get(queryToGetTotal);
-  response.send(gettingSum);
+  response.send({
+    cured: gettingSum.cured,
+    active: gettingSum.active,
+    deaths: gettingSum.active,
+    deaths: gettingSum.deaths,
+  });
 });
+
+module.exports = app;
