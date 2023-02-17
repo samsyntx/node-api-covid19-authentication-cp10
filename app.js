@@ -35,7 +35,7 @@ initializationDatabaseAndServer();
 // Authentication FROM Midware Function
 const authentication = (request, response, next) => {
   let jwtToken;
-  const authHeader = request.headers["Authorization"];
+  const authHeader = request.headers["authorization"];
   if (authHeader !== undefined) {
     jwtToken = authHeader.split(" ")[1];
   }
@@ -43,8 +43,9 @@ const authentication = (request, response, next) => {
     response.status(401);
     response.send("Invalid JWT Token");
   } else {
-    jwt.verity(jwtToken, "My_Secret_Token", async (error, payload) => {
+    jwt.verify(jwtToken, "My_Secret_Token", async (error, payload) => {
       if (error) {
+        response.status(401);
         response.send("Invalid JWT Token");
       } else {
         next();
@@ -113,17 +114,9 @@ app.get("/states/:stateId/", authentication, async (request, response) => {
 // API 4
 app.post("/districts/", authentication, async (request, response) => {
   const { districtName, stateId, cases, cured, active, deaths } = request.body;
-  const {} = request.params;
   const queryToUpdateDistricts = `
-  UPDATE 
-    district
-  SET 
-    district_name = '${districtName}',
-    state_id = '${stateId}',
-    cases = '${cases}',
-    cured = '${cured}',
-    active = '${active}',
-    deaths = '${deaths}';`;
+  INSERT INTO district(district_name, state_id, cases, cured, active, deaths)
+  VALUES ('${districtName}','${stateId}', '${cases}','${cured}','${active}','${deaths}');`;
   await database.run(queryToUpdateDistricts);
   response.send("District Successfully Added");
 });
@@ -205,19 +198,19 @@ app.get(
   authentication,
   async (request, response) => {
     const { stateId } = request.params;
-    const queryToGetTotal = `
+    const queryToGetstats = `
  SELECT sum(cases) AS cases,
     SUM(cured) AS cured,
     SUM(active) AS active,
     SUM(deaths) AS deaths
  FROM district
  WHERE state_id = '${stateId}';`;
-    const gettingSum = await database.get(queryToGetTotal);
+    const gettingSum = await database.get(queryToGetstats);
     response.send({
-      cured: gettingSum.cured,
-      active: gettingSum.active,
-      deaths: gettingSum.active,
-      deaths: gettingSum.deaths,
+      totalCases: gettingSum.cases,
+      totalCured: gettingSum.cured,
+      totalActive: gettingSum.active,
+      totalDeaths: gettingSum.deaths,
     });
   }
 );
